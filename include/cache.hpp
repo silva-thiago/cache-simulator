@@ -32,7 +32,6 @@ private:
     int numero_do_bloco;
     static int ultimo_numero;
 };
-
 class Memoria
 {
 public:

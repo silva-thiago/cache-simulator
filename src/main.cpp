@@ -29,8 +29,6 @@ int main(void)
 
     arquivo.close();
 
-    std::cout << cfg.blocos_da_memoria << "\n";
-
     // Classe app que contém todos os comandos que podem ser usados
 
     App app(cfg);
