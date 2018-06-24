@@ -19,10 +19,13 @@ private:
     bool mapeamento_associativo (int numero_do_bloco);
     bool mapeamento_misto       (int numero_do_bloco);
 
-    void subs_aleatoria         (Bloco& bloco);
-    void subs_fifo              (Bloco& bloco);
-    void subs_lfu               (Bloco& bloco);
-    void subs_lru               (Bloco& bloco);
+    void atualizar_contadores   (Linha& linha);
+
+    void substituir             (Bloco& novo_bloco, int indice_inicial = 0, int tamanho_conjunto = 0);
+    void subs_aleatoria         (Bloco& novo_bloco, int indice_inicial = 0, int tamanho_conjunto = 0);
+    void subs_fifo              (Bloco& novo_bloco, int indice_inicial = 0, int tamanho_conjunto = 0);
+    void subs_lfu               (Bloco& novo_bloco, int indice_inicial = 0, int tamanho_conjunto = 0);
+    void subs_lru               (Bloco& novo_bloco, int indice_inicial = 0, int tamanho_conjunto = 0);
 
     Cache cache;
     Memoria memoria;
