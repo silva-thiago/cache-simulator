@@ -11,7 +11,7 @@ int main(void)
     // Arquivo de entrada do programa
     std::ifstream arquivo;
     arquivo.open("data/config.txt");
-    if(arquivo.fail())
+    if(!arquivo.is_open())
         throw std::runtime_error("Arquivo nao encontrado");
 
     // Variavel de configuração
@@ -19,7 +19,7 @@ int main(void)
 
     // Ler cada uma das configurações do arquivo
 
-    arquivo >> cfg.palavras_por_bloco;
+    arquivo >> cfg.numero_de_palavras;
     arquivo >> cfg.linhas_da_cache;
     arquivo >> cfg.blocos_da_memoria;
     arquivo >> cfg.tipo_de_mapeamento;
@@ -41,20 +41,58 @@ int main(void)
     std::cout << "Command> ";
     while(std::cin >> comando)
     {
-        std::string cmd = comando.substr(0, comando.find_first_of(' '));
-        if(cmd == "Show")
+        if(comando == "Show")
         {
             app.show();
         }
-        else if(cmd == "Read")
+        else if(comando == "Read")
         {
-            app.read(stoi(comando.substr(comando.find_first_of(' '))));
+            std::cin >> comando;
+            try
+            {
+                int endereco = std::stoi(comando);
+                if(endereco < 0 or endereco > (cfg.blocos_da_memoria * cfg.numero_de_palavras))
+                    throw std::out_of_range("");
+                app.read(endereco);
+            }
+            catch(std::invalid_argument&)
+            {
+                std::cout << "Endereço ínvalido, digite novamete\n";
+            }
+            catch(std::out_of_range&)
+            {
+                std::cout << "Endereço fora do intervalo.\n";
+            }
+
         }
-        else if(cmd == "Write")
+        else if(comando == "Write")
         {
-            app.write();
+            try
+            {
+                std::cin >> comando;
+                int endereco = std::stoi(comando);
+                if(endereco < 0 or endereco > (cfg.blocos_da_memoria * cfg.numero_de_palavras))
+                    throw std::out_of_range("Endereço fora do intervalo.");
+                std::cin >> comando;
+                int valor = std::stoi(comando);
+                if(valor < 0)
+                    throw std::out_of_range("Valor fora do intervalo.");
+                app.write(endereco, valor);
+            }
+            catch(std::invalid_argument&)
+            {
+                std::cout << "Endereço ou valor ínvalido, digite novamente.\n";
+            }
+            catch(std::out_of_range& error)
+            {
+                if(error.what()== std::string("stoi"))
+                    std::cout << "Valor fora do intervalo do tipo int.\n";
+                else
+                    std::cout << error.what() << std::endl;
+            }
+
         }
-        else if(cmd == "Quit")
+        else if(comando == "Quit")
         {
             std::exit(0);
         }

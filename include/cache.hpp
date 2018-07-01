@@ -1,101 +1,186 @@
 #ifndef CACHE_HPP
 #define CACHE_HPP
 
-#include <cstdio>
 #include <vector>
+#include <random>
 
+/*!
+ * \brief Functor (objeto de função) para gerar números aléatorios não negativos de três digitos.
+ */
+struct Random {
+    std::random_device                              rd;
+    std::mt19937                                    mt;
+    std::uniform_int_distribution<unsigned int>     dist;
 
-class Bloco
+    Random() : rd{}, mt{rd()}, dist{0, 999} {}
+    int operator()()
+    {
+      return dist(mt);
+    }
+};
+/*!
+ * \brief A classe bloco representa um endereço da mémoria que armazena {numero_de_palavras} palavras.
+ */
+struct Bloco
 {
-public:
-    Bloco(size_t tamanho)
+
+    /*!
+     * \brief Cria um bloco de {tamanho} palavras.
+     * \param tamanho quantidade de palavras.
+     */
+    Bloco(unsigned int tamanho)
     {
-        palavras.resize(tamanho);
+        conteudo.resize(tamanho);
     }
-    ~Bloco()
+    /*!
+     * \brief Criar um bloco de {tamanho} palavras com conteúdo aleatório.
+     * \param tamanho quantidade de palavras.
+     * \param rand Functor de geração de números ramdomicos.
+     */
+    Bloco(unsigned int tamanho, Random& rand)
     {
-        palavras.clear();
+        conteudo.resize(tamanho);
+        for(unsigned int c = 0; c < tamanho; c++)
+        {
+            conteudo[c] = rand();
+        }
     }
-    bool operator==(Bloco& rhs)
-    {
-       // dois blocos são iguais se eles tiverem o mesmo endereço na memória
-       return this->endereco == rhs.endereco;
-    }
-    int& operator[](unsigned int indice)
-    {
-        return palavras[indice];
-    }
-    unsigned int& get_endereco()
-    {
-        return this->endereco;
-    }
-    std::vector<int>& get_palavras()
-    {
-        return palavras;
-    }
-protected:
-    unsigned int endereco;
-    std::vector<int> palavras;
+
+
+    /*!
+     * \brief Palavras contidas no bloco.
+     */
+    std::vector<unsigned int> conteudo;
 };
 
-class Linha : public Bloco
+/*!
+ * \brief A linha é um bloco da cache, com a diferença que ela contém os contadores
+ */
+struct Linha : public Bloco
 {
-public:
-    Linha(size_t tamanho): Bloco(tamanho)
+    /*!
+     * \brief Cria uma Linha (Bloco) de {tamanho} palavras.
+     * \param tamanho quantidade de palavras.
+     */
+    Linha(unsigned int tamanho): Bloco(tamanho)
     {
+        this->chegada = 0;
+        this->total_de_usos = 0;
+        this->refencia_temporal = 0;
     }
-    Linha& operator=(Bloco& bloco)
+    /*!
+     * \brief lê um bloco da mémoria (armazena na linha).
+     * \param bloco bloco da mémoria.
+     * \param numero_do_bloco Número do bloco dentro da mémoria principal.
+     * \param tamanho_do_conjunto tamanho do conjunto usado no mapeamento.
+     * \param acessos A quantidade de acessos é usada como referência temporal.
+     * \return a própria linha.
+     * \note os contadores são inicializados aqui.
+     */
+    Linha& ler(Bloco& bloco, unsigned int numero_do_bloco, unsigned int tamanho_do_conjunto, unsigned int acessos)
     {
-        this->endereco = bloco.get_endereco();
-        this->palavras = bloco.get_palavras();
-        total_de_usos = 1;
-        usos_recentes = 1;
+        // -- Contadores --
+        this->chegada = tamanho_do_conjunto-1;
+        this->total_de_usos = 1;
+        this->refencia_temporal = acessos;
+        // -- Atributos --
+        this->numero_do_bloco = numero_do_bloco;
+        this->conteudo = bloco.conteudo;
+
         return *this;
     }
-    int total_de_usos = 0;
-    int usos_recentes = 0;
+    /*!
+     * \brief escreve uma valor dentro do vetor de palavras.
+     * \param palavra índice da palavra (endereço da palavra - endereço da primeira palavra do conjunto).
+     * \param valor valor a ser colocado.
+     * \return a própria linha.
+     */
+    Linha& escrever(unsigned int palavra, unsigned int valor)
+    {
+        this->conteudo[palavra] = valor;
+        return *this;
+    }
+    /*!
+     * \brief Verifica se o bloco está nessa linha.
+     * \param numero_do_bloco numero do bloco na mémoria.
+     * \param acessos quantidade de acessos (usada como referência temporal para o LRU).
+     * \return true, em caso de cache hit, false caso o contrário.
+     * \note Os contadores de uso e referência temporal são atualizados aqui.
+     */
+    bool buscar(unsigned int numero_do_bloco, unsigned int acessos)
+    {
+        if(this->total_de_usos > 0 and numero_do_bloco == this->numero_do_bloco)
+        {
+            total_de_usos++;
+            refencia_temporal = acessos;
+            return true;
+        }
+        return false;
+    }
+
+    /*!
+     * \brief Cada linha tem o número do bloco que está armazenado.
+     */
+    unsigned int numero_do_bloco;
+    /*!
+     * \brief contador usado no LFU.
+     */
+    unsigned int total_de_usos;
+    /*!
+     * \brief contador usado no LRU.
+     */
+    unsigned int refencia_temporal;
+    /*!
+     * \brief contador usado no FIFO.
+     */
+    unsigned int chegada;
 
 };
-
-class Memoria
+/*!
+ * \brief A mémoria é um conjunto de blocos.
+ */
+struct Memoria
 {
-public:
-    Memoria(size_t tamanho, size_t palavras_por_linha)
+    /*!
+     * \brief Constrói uma memoria de {tamanho} blocos com cada bloco contendo {numero_de_palavras} palavras.
+     * \param tamanho.
+     * \param numero_de_palavras.
+     */
+    Memoria(unsigned int tamanho, unsigned int numero_de_palavras)
     {
-        blocos.resize(tamanho, Bloco(palavras_por_linha));
+        Random rand;
+        for(unsigned int c = 0; c < tamanho; c++)
+        {
+            blocos.push_back(Bloco(numero_de_palavras, rand));
+        }
     }
-    Bloco& operator[](unsigned int indice)
-    {
-        return blocos[indice];
-    }
-    ~Memoria()
-    {
-        blocos.clear();
-    }
-private:
+    /*!
+     * \brief Vetor de blocos.
+     */
     std::vector<Bloco> blocos;
 };
-
-class Cache
+/*!
+ * \brief A cache é uma mémoria próxima do processador.
+ */
+struct Cache
 {
-public:
-    Cache(size_t tamanho,  size_t palavras_por_linha)
+    /*!
+     * \brief Constrói uma memoria cache de {tamanho} blocos com cada bloco contendo {numero_de_palavras} palavras.
+     * \param tamanho.
+     * \param numero_de_palavras.
+     */
+    Cache(unsigned int tamanho,  unsigned int numero_de_palavras)
     {
-        linhas.resize(tamanho, Linha(palavras_por_linha));
+        linhas.resize(tamanho, Linha(numero_de_palavras));
     }
-    ~Cache()
-    {
-        linhas.clear();
-    }
-    Linha& operator[](unsigned int indice)
-    {
-        return linhas[indice];
-    }
-    size_t tamanho;
-    int reinicializar_usos_recentes = tamanho;
-private:
+    /*!
+     * \brief Contador de acessos (referência temporal).
+     */
+    unsigned int acessos = 0;
+    /*!
+     * \brief Vetor de linhas.
+     */
     std::vector<Linha> linhas;
-
 };
 
 #endif // CACHE_HPP
