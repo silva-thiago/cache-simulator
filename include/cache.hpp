@@ -143,8 +143,8 @@ struct Memoria
 {
     /*!
      * \brief Constrói uma memoria de {tamanho} blocos com cada bloco contendo {numero_de_palavras} palavras.
-     * \param tamanho.
-     * \param numero_de_palavras.
+     * \param tamanho numero de blocos (definido na configuração)..
+     * \param numero_de_palavras número de palavras de cada bloco (definido na configuração)..
      */
     Memoria(unsigned int tamanho, unsigned int numero_de_palavras)
     {
@@ -165,9 +165,9 @@ struct Memoria
 struct Cache
 {
     /*!
-     * \brief Constrói uma memoria cache de {tamanho} blocos com cada bloco contendo {numero_de_palavras} palavras.
-     * \param tamanho.
-     * \param numero_de_palavras.
+     * \brief Constrói uma memoria cache de {tamanho} linha(blocos) com cada bloco contendo {numero_de_palavras} palavras.
+     * \param tamanho numero de linhas (definido na configuração)..
+     * \param numero_de_palavras número de palavras de cada linha (definido na configuração).
      */
     Cache(unsigned int tamanho,  unsigned int numero_de_palavras)
     {
