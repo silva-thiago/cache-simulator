@@ -219,9 +219,13 @@ Linha &App::subs_fifo(unsigned int indice_do_conjunto, unsigned int tamanho_do_c
 		if (linha_atual.chegada == 0)
 		{
 			if (linha_resultante == nullptr)
-				*linha_resultante = linha_atual;
+			{
+				linha_resultante = &linha_atual;
+			}
 			else
+			{
 				break;
+			}
 		}
 		else
 		{
