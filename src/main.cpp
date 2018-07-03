@@ -51,7 +51,7 @@ int main(void)
             try
             {
                 int endereco = std::stoi(comando);
-                if(endereco < 0 or endereco > (cfg.blocos_da_memoria * cfg.numero_de_palavras))
+                if(endereco < 0 or endereco > ((cfg.blocos_da_memoria * cfg.numero_de_palavras) - 1))
                     throw std::out_of_range("");
                 app.read(endereco);
             }
@@ -71,7 +71,7 @@ int main(void)
             {
                 std::cin >> comando;
                 int endereco = std::stoi(comando);
-                if(endereco < 0 or endereco > (cfg.blocos_da_memoria * cfg.numero_de_palavras))
+                if(endereco < 0 or endereco > ((cfg.blocos_da_memoria * cfg.numero_de_palavras) - 1))
                     throw std::out_of_range("Endereço fora do intervalo.");
                 std::cin >> comando;
                 int valor = std::stoi(comando);
